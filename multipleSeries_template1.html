@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sample website for multiple seminar series</title>
+    <meta charset='utf-8'/>
+    <script type="text/x-mathjax-config"> MathJax.Hub.Config({ extensions: ["tex2jax.js"],
+jax: ["input/TeX","output/HTML-CSS"], tex2jax: {inlineMath: [['$','$'],['\\(','\\)']]},
+TeX: { extensions: ["AMSmath.js","AMSsymbols.js"]} });
+    </script>
+    <script type="text/javascript" async
+            src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+    </head>
+<body>
+
+<h1>Sample website for multiple seminar series</h1>
+
+<p>
+This example website  lists all events in plain format and renders LaTeX code.
+It lets the user choose a seminar series through a drop-down menu,
+    and lists all the upcoming events for that series.
+    It also has a dropdown menu which the user can use to see past semesters for
+    the selected series.
+</p>
+
+Choose which series to display:
+<div>
+    <select id="seminarSelect" onchange="changeSeminarSeries(); semesterSelectBlock.selectedIndex = 0;"></select>
+</div>
+
+
+<h2>Upcoming seminars</h2>
+<div id="upcomingevents"></div>
+
+<h2>Past seminars</h2>
+Choose which semester to display:
+<div>
+    <select id="semesterSelect" onchange="changeSemester()"></select>
+</div>
+
+<div id="pastevents"></div>
+
+<script type="text/javascript" src="calendarinterface.js"></script>
+<script type="text/javascript" src="timeutils.js"></script>
+<script type="text/javascript" src="writerutils.js"></script>
+
+
+<script>
+    /*
+        These are the names of the seminar series that are used on this webpage, corresponding calendar IDs,
+        and years of first available data.
+    */
+    // the indices in these three arrays must be matched
+    seminarNameArray = ['Applied Probability and Risk', 'Minerva', 'Mathematical Finance', 'Probability', 'Joint Probability Colloquia'];
+    databaseIDArray = ['l38287iivl58souu9h0kgcl1lg@group.calendar.google.com', '2oan5nedfoavgo902u13difeck@group.calendar.google.com', '5064cppnhs35nq0nb6oejhof6o@group.calendar.google.com', 'jilje7618odhbjbm5n24rpgfio@group.calendar.google.com', 'tcc3ubgenpfrmqqfsevqj36d4k@group.calendar.google.com']
+    startYearArray = [2013, 2017, 2017, 2017, 2017];
+
+
+    // On this page there is a dropdown menu to select the seminar series, and we are now filling it.
+    var seminarSelectBlock = document.getElementById("seminarSelect");
+    for (i = 0; i < seminarNameArray.length; i++) {
+        var option = document.createElement("option");
+        option.text = seminarNameArray[i];
+        seminarSelectBlock.add(option);
+    }
+
+    // There is also a dropdown to select the semester
+    var semesterSelectBlock = document.getElementById("semesterSelect");
+
+
+    function populateSemesterDropdown() {
+        semesterutils.allAndPastSemesters(startYearArray[seminarSelectBlock.selectedIndex]);
+
+        while (semesterSelectBlock.firstChild) {
+            semesterSelectBlock.removeChild(semesterSelectBlock.firstChild);
+        }
+        for (i = 0; i < semesterutils.semesterArray.length; i++) {
+            var option = document.createElement("option");
+            option.text = semesterutils.semesterArray[i].name;
+            semesterSelectBlock.add(option);
+        }
+    }
+
+
+
+    // This function is executed when a different seminar series is selected.
+    // All past events are inserted in the 'pastevents' div, in descending order.
+    function listPastEventsWrapper() {
+        var seminaridx = seminarSelectBlock.selectedIndex;
+        var div = document.getElementById('pastevents');
+
+        calendarquery(databaseIDArray[seminaridx], semesterutils.semesterArray[0].start, (new Date()), 'descending').then(function (eventArray) {
+            writerutils.printEventArray_plain(eventArray, div);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+        });
+    }
+
+
+    // This function is executed when a different seminar series is selected.
+    // All upcoming events are inserted in the 'upcomingevents' div, in ascending order.
+    function listUpcomingEventsWrapper() {
+        var seminaridx = seminarSelectBlock.selectedIndex;
+        var div = document.getElementById('upcomingevents');
+
+        calendarquery(databaseIDArray[seminaridx], (new Date()), (new Date("12/31/" + semesterutils.yearinfinity)), 'ascending').then(function (eventArray) {
+            writerutils.printEventArray_plain(eventArray, div);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+        });
+    }
+
+    // This function is executed when a different semester is selected.
+    // All past events from that semester are inserted in the 'pastevents' div, in descending order.
+    function listSemesterEventsWrapper() {
+        var seminaridx = seminarSelectBlock.selectedIndex;
+        var semesteridx = semesterSelectBlock.selectedIndex;
+        var div = document.getElementById('pastevents');
+
+        calendarquery(databaseIDArray[seminaridx], semesterutils.semesterArray[semesteridx].start, semesterutils.semesterArray[semesteridx].end, 'descending').then(function (eventArray) {
+            writerutils.printEventArray_plain(eventArray, div);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+        });
+    }
+
+
+    function clearDiv(id) {
+        var div = document.getElementById(id);
+        while (div.firstChild) {
+            div.removeChild(div.firstChild);
+        }
+    }
+
+
+    function changeSemester() {
+        gapi.client.setApiKey(API_KEY);
+        clearDiv('pastevents');
+        gapi.client.load('calendar', 'v3', listSemesterEventsWrapper);
+    }
+
+
+    function changeSeminarSeries() {
+        gapi.client.setApiKey(API_KEY);
+        populateSemesterDropdown();
+        clearDiv('upcomingevents');
+        clearDiv('pastevents');
+        gapi.client.load('calendar', 'v3', listUpcomingEventsWrapper);
+        gapi.client.load('calendar', 'v3', listPastEventsWrapper);
+    }
+
+</script>
+
+<script async defer src="https://apis.google.com/js/client.js"
+        onload="this.onload=function(){};gapi.load('client', changeSeminarSeries)">
+</script>
+
+
+</body>
+</html>

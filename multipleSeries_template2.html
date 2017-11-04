@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sample website for multiple seminar series: previous, current, and next week</title>
+    <meta charset='utf-8'/>
+    <script type="text/x-mathjax-config"> MathJax.Hub.Config({ extensions: ["tex2jax.js"],
+jax: ["input/TeX","output/HTML-CSS"], tex2jax: {inlineMath: [['$','$'],['\\(','\\)']]},
+TeX: { extensions: ["AMSmath.js","AMSsymbols.js"]} });
+    </script>
+    <script type="text/javascript" async
+            src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+    </head>
+<body>
+
+<h1>Sample website for last/current/next week, multiple seminar series</h1>
+
+<p>
+This example website  lists all events in plain format and renders LaTeX code.
+It lists the seminars from last week, the current week, and the next week.
+</p>
+
+<h2>Last week</h2>
+<div id="lastweek"></div>
+<h2>Current week</h2>
+<div id="currentweek"></div>
+<h2>Next week</h2>
+<div id="nextweek"></div>
+
+
+<script type="text/javascript" src="calendarinterface.js"></script>
+<script type="text/javascript" src="timeutils.js"></script>
+<script type="text/javascript" src="writerutils.js"></script>
+
+
+<script>
+    /*
+        These are the names of the seminar series that are used on this webpage, corresponding calendar IDs,
+        and years of first available data.
+    */
+    // the indices in these three arrays must be matched
+    var seminarNameArray = ['Applied Probability and Risk', 'Minerva', 'Mathematical Finance', 'Probability', 'Joint Probability Colloquia'];
+    var databaseIDArray = ['l38287iivl58souu9h0kgcl1lg@group.calendar.google.com', '2oan5nedfoavgo902u13difeck@group.calendar.google.com', '5064cppnhs35nq0nb6oejhof6o@group.calendar.google.com', 'jilje7618odhbjbm5n24rpgfio@group.calendar.google.com', 'tcc3ubgenpfrmqqfsevqj36d4k@group.calendar.google.com']
+
+    weekutils.populate();
+
+    // This function is executed when the past is loaded
+    // All past events are inserted in the appropriate div, in ascending order.
+    function listEventsWrapper() {
+        listEventsForWeek(weekutils.lastWeek, document.getElementById('lastweek'));
+        listEventsForWeek(weekutils.currentWeek, document.getElementById('currentweek'));
+        listEventsForWeek(weekutils.nextWeek, document.getElementById('nextweek'));
+    }
+
+    function listEventsForWeek(week, div) {
+        for (var seminarIndex = 0; seminarIndex < seminarNameArray.length; seminarIndex++) {
+            calendarquery(databaseIDArray[seminarIndex], week.start, week.end, 'ascending').then(function (eventArray) {
+                /* Couldn't make it work to add header with seminar name; even after binding "this" to the
+                 * seminarIndex variable is different when the promise gets resolved
+                if (eventArray.length > 0) {
+                    var header = document.createElement('h3');
+                    header.innerHTML = this.seminarNameArray[seminarIndex];
+                    div.appendChild(header);
+                }
+                 */
+                writerutils.printEventArray_plain(eventArray, div);
+            });
+        }
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, div]);
+    }
+
+    function changeSeminarSeries() {
+        gapi.client.setApiKey(API_KEY);
+        gapi.client.load('calendar', 'v3', listEventsWrapper);
+    }
+
+</script>
+
+<script async defer src="https://apis.google.com/js/client.js"
+        onload="this.onload=function(){};gapi.load('client', changeSeminarSeries)">
+</script>
+
+
+</body>
+</html>

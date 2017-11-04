@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sample website for single seminar series</title>
+    <meta charset='utf-8'/>
+    <script type="text/x-mathjax-config"> MathJax.Hub.Config({ extensions: ["tex2jax.js"],
+jax: ["input/TeX","output/HTML-CSS"], tex2jax: {inlineMath: [['$','$'],['\\(','\\)']]},
+TeX: { extensions: ["AMSmath.js","AMSsymbols.js"]} });
+    </script>
+    <script type="text/javascript" async
+            src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML">
+    </script>
+</head>
+<body>
+
+<h1>Sample website for single seminar series by semester</h1>
+
+<p>
+    This example website lists all events for a single seminar series in table format and renders LaTeX code.
+It lists all the events for the current semester in ascending order,
+and has a hyperlinked list at the bottom which the user can click to see one of the past semesters.
+</p>
+
+<h2 id="eventsheader">Events</h2>
+<table id="events"></table>
+
+
+Archive:
+<div id="archive"></div>
+
+
+<script type="text/javascript" src="calendarinterface.js"></script>
+<script type="text/javascript" src="timeutils.js"></script>
+<script type="text/javascript" src="writerutils.js"></script>
+
+<script>
+    /*
+        This is the name of the seminar series displayed on this webpage, corresponding calendar ID,
+        and year of first available data.
+    */
+    seminarName = 'Applied Probability and Risk';
+    databaseID = 'l38287iivl58souu9h0kgcl1lg@group.calendar.google.com';
+    startYear = 2013;
+
+    semesterutils.currentAndPastSemesters(startYear);
+
+    function bindClick(idx) {
+        return function(){
+            listArchiveEvents(idx);
+        };
+    }
+
+    var semesterArray = [];
+    var semesterdiv = document.getElementById('archive');
+    for (var i = 0; i < semesterutils.semesterArray.length; i++) {
+        var semester = document.createElement('a');
+        semester.href = "javascript:void(0)";
+        semester.title = semesterutils.semesterArray[i].name;
+        semester.innerHTML = semesterutils.semesterArray[i].name + " ";
+        semesterdiv.appendChild(semester);
+        semesterArray[i] = semester;
+        semesterArray[i].addEventListener("click", bindClick(i));
+    }
+
+
+
+    function listCurrentSemesterEventsWrapper() {
+        clearTable('events');
+        listArchiveEvents(0);
+    }
+
+
+    // This function is executed when a different semester is selected.
+    // All past events from that semester are inserted in the 'pastevents' div, in descending order.
+    function listArchiveEvents(semesteridx) {
+        clearTable('events');
+        var tbl = document.getElementById('events');
+        var header = document.getElementById('eventsheader');
+        header.innerHTML = "Events for " + semesterutils.semesterNameArray[semesteridx];
+
+        calendarquery(databaseID, semesterutils.semesterArray[semesteridx].start, semesterutils.semesterArray[semesteridx].end, 'ascending').then(function (eventArray) {
+            writerutils.printEventArray_table1(eventArray, tbl);
+            MathJax.Hub.Queue(["Typeset", MathJax.Hub, tbl]);
+        });
+    }
+
+
+    function clearTable(id) {
+        var table = document.getElementById(id);
+
+        table.deleteTHead();
+        while (table.rows.length > 0) {
+            table.deleteRow(0);
+        }
+    }
+
+
+    function displayEvents() {
+        gapi.client.setApiKey(API_KEY);
+        gapi.client.load('calendar', 'v3', listCurrentSemesterEventsWrapper);
+    }
+
+
+</script>
+
+<script async defer src="https://apis.google.com/js/client.js"
+        onload="this.onload=function(){};gapi.load('client', displayEvents)"
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+</script>
+
+
+</body>
+</html>
