@@ -79,7 +79,7 @@ Archive:
         header.innerHTML = "Events for " + semesterutils.semesterNameArray[semesteridx];
 
         calendarquery(databaseID, semesterutils.semesterArray[semesteridx].start, semesterutils.semesterArray[semesteridx].end, 'ascending').then(function (eventArray) {
-            writerutils.printEventArray_table1(eventArray, tbl);
+            writerutils.printEventArray_table2(eventArray, tbl);
             MathJax.Hub.Queue(["Typeset", MathJax.Hub, tbl]);
         });
     }
